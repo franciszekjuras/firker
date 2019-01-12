@@ -13,7 +13,14 @@ void FirKer::invalidate(){this->valid = false;}
 
 void FirKer::validate(){this->valid = true;}
 
-bool FirKer::isValid(){return this->valid;}
+bool FirKer::isValid() const {return this->valid;}
+
+bool FirKer::setSampFreq(double freq){
+	if(freq <= 0.)
+		return false;
+	this->sampFreq = freq;
+	return true;
+}
 
 bool FirKer::setRank(int rank){
 	if(rank < 0)
@@ -25,8 +32,46 @@ bool FirKer::setRank(int rank){
 	return true;
 }
 
-const std::vector<double>& FirKer::getKernel() const{
-	return ker;
+const std::vector<double>& FirKer::getKernel() const{return ker;}
+
+double FirKer::getSampFreq() const{return sampFreq;}
+
+
+std::vector<double> FirKer::transmission(int div) const{
+	std::vector<double> trns;
+	trns.resize(div+1);
+	std::vector<double> luCos;
+	luCos.resize(4*div);
+
+	for(int k = 0; k < 4 * div; ++k)
+		luCos[k] = std::cos(M_PI_2*static_cast<double>(k)/static_cast<double>(div));
+
+	int mStart = ((ker.size()%2) == 0) ? 1 : 2;
+	for(int i = 0; i <= div; ++i){
+		int m = mStart;
+		for(int j = ((ker.size()+1)/2); j < ker.size(); ++j){
+			trns[i] += 2. * ker[j] * luCos[(i*m)%(4*div)];
+			m += 2;
+		}
+	}
+	if((ker.size()%2) == 1){
+		for(int i = 0; i <= div; ++i)
+			trns[i] += ker[ker.size()/2];
+	}
+	for(auto& t : trns){
+		t = std::abs(t);
+	}
+	// for(int i = 0; i < trns.size(); ++i)
+	// 	trns[i] = std::abs(trns[i]);
+
+	return trns;
+}
+
+std::vector<double> FirKer::toBode(const std::vector<double>& trns){
+	std::vector<double> bode(trns);
+	for(auto& t : bode)
+		t = 20.* std::log10(t);
+	return bode;
 }
 
 //---> Equiripple Filter Kernel <---//
@@ -52,7 +97,7 @@ bool EqRippleFirKer::calc(){
 	if(this->isValid())
 		return true;
 	//specification validation
-	if(freqs.size()!=0 && freqs.back() >= .5)
+	if(freqs.size()!=0 && freqs.back() >= (.5*sampFreq))
 		return false;
 	//body
 
@@ -63,7 +108,7 @@ bool EqRippleFirKer::calc(){
 	for(auto f : freqs){
 		accg = *gcrr - *(++gcrr);
 		if(accg != 0.)
-			spc.push_back(std::make_pair(f, accg));
+			spc.push_back(std::make_pair((f/sampFreq), accg));
 	}
 
 	double t;

@@ -8,16 +8,21 @@ public:
 	FirKer();
 
 	virtual bool calc() = 0;
-	bool isValid();
+	bool isValid() const;
 
 	//bool setFrequency();
 	bool setRank(int rank);
+	bool setSampFreq(double freq);
+	double getSampFreq() const;
+	std::vector<double> transmission(int div) const;
+	static std::vector<double> toBode(const std::vector<double>& trns);
 	const std::vector<double>& getKernel() const;
 	
 protected:
 	bool valid;
 	int rank;
 	std::vector<double> ker;
+	double sampFreq;
 	void invalidate();
 	void validate();
 
