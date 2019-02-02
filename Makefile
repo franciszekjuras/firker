@@ -6,7 +6,7 @@ CXXFLAGS=-I$(IDIR) -std=c++14
 ODIR=obj
 
 #LIBS=-lm
-LIBS= -lm
+LIBS= -lm -lfirpm
 
 _DEPS = firker.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
